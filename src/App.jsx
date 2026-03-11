@@ -15,6 +15,7 @@ function App() {
   const [sessionResults, setSessionResults] = useState(null);
   const [wrongQuestionIds, setWrongQuestionIds] = useState([]);
   const [sessionAttempts, setSessionAttempts] = useState({});
+  const [lastQuestionIndex, setLastQuestionIndex] = useState({}); // Track last question index per session
 
   // Load progress from localStorage
   useEffect(() => {
@@ -24,6 +25,7 @@ function App() {
       setAnswers(progress.answers || {});
       setWrongQuestionIds(progress.wrongQuestionIds || []);
       setSessionAttempts(progress.sessionAttempts || {});
+      setLastQuestionIndex(progress.lastQuestionIndex || {});
     }
   }, []);
 
@@ -32,10 +34,11 @@ function App() {
     const progress = {
       answers,
       wrongQuestionIds,
-      sessionAttempts
+      sessionAttempts,
+      lastQuestionIndex
     };
     localStorage.setItem('az900_progress', JSON.stringify(progress));
-  }, [answers, wrongQuestionIds, sessionAttempts]);
+  }, [answers, wrongQuestionIds, sessionAttempts, lastQuestionIndex]);
 
   useEffect(() => {
     if (Object.keys(answers).length > 0 || wrongQuestionIds.length > 0) {
@@ -70,11 +73,22 @@ function App() {
   // Start a session
   const startSession = (sessionNum) => {
     const questions = getSessionQuestions(sessionNum);
+    const savedIndex = lastQuestionIndex[sessionNum] || 0;
+    
     setCurrentSession(sessionNum);
     setSessionQuestions(questions);
-    setCurrentQuestionIndex(0);
-    setSelectedAnswer(null);
-    setShowExplanation(false);
+    setCurrentQuestionIndex(savedIndex);
+    
+    // Check if current question was already answered - restore state if so
+    const currentQ = questions[savedIndex];
+    if (currentQ && answers[currentQ.id]) {
+      setSelectedAnswer(answers[currentQ.id].selected);
+      setShowExplanation(true);
+    } else {
+      setSelectedAnswer(null);
+      setShowExplanation(false);
+    }
+    
     setCurrentView('quiz');
   };
 
@@ -108,16 +122,31 @@ function App() {
     }
 
     setShowExplanation(true);
+    
+    // Save progress immediately after submitting answer
+    const newLastIndex = { ...lastQuestionIndex, [currentSession]: currentQuestionIndex };
+    setLastQuestionIndex(newLastIndex);
+    const progress = {
+      answers: { ...answers, [currentQuestion.id]: { selected: selectedAnswer, correct: isCorrect } },
+      wrongQuestionIds: isCorrect ? wrongQuestionIds : [...wrongQuestionIds, currentQuestion.id],
+      sessionAttempts,
+      lastQuestionIndex: newLastIndex
+    };
+    localStorage.setItem('az900_progress', JSON.stringify(progress));
   };
 
   // Navigate to next question
   const nextQuestion = () => {
     if (currentQuestionIndex < sessionQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+      const newIndex = currentQuestionIndex + 1;
+      setCurrentQuestionIndex(newIndex);
+      // Save progress so user can resume if they leave
+      setLastQuestionIndex(prev => ({ ...prev, [currentSession]: newIndex }));
       setSelectedAnswer(null);
       setShowExplanation(false);
     } else {
-      // End of session
+      // End of session - clear the saved question index
+      setLastQuestionIndex(prev => ({ ...prev, [currentSession]: 0 }));
       calculateResults();
     }
   };
@@ -171,11 +200,35 @@ function App() {
     setSelectedAnswer(null);
     setShowExplanation(false);
     setSessionResults(null);
+    // Reset last question index for this session
+    const newLastIndex = { ...lastQuestionIndex, [currentSession]: 0 };
+    setLastQuestionIndex(newLastIndex);
+    // Save progress immediately
+    const progress = {
+      answers,
+      wrongQuestionIds,
+      sessionAttempts,
+      lastQuestionIndex: newLastIndex
+    };
+    localStorage.setItem('az900_progress', JSON.stringify(progress));
     setCurrentView('quiz');
   };
 
-  // Back to sessions
+  // Back to sessions - save current progress first
   const backToSessions = () => {
+    // Save current question index so user can resume later
+    if (currentView === 'quiz' && currentQuestionIndex > 0) {
+      const newLastIndex = { ...lastQuestionIndex, [currentSession]: currentQuestionIndex };
+      setLastQuestionIndex(newLastIndex);
+      // Save progress immediately
+      const progress = {
+        answers,
+        wrongQuestionIds,
+        sessionAttempts,
+        lastQuestionIndex: newLastIndex
+      };
+      localStorage.setItem('az900_progress', JSON.stringify(progress));
+    }
     setCurrentView('sessions');
     setSessionResults(null);
   };
