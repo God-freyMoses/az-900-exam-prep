@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import questionsData from './data/questions.json';
 
 const QUESTIONS_PER_SESSION = Math.ceil(questionsData.questions.length / 4);
-const PASS_THRESHOLD = 95;
+const PASS_THRESHOLD = 70;
 
 function App() {
   const [currentView, setCurrentView] = useState('sessions'); // sessions, quiz, results
