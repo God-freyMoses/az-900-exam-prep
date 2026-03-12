@@ -204,35 +204,35 @@ function App() {
           <span className="progress-text">{stats.totalCorrect}/{questionsData.questions.length} Correct</span>
         </div>
 
-        <div className="sessions-grid">
-          {[1, 2, 3, 4].map(sessionNum => {
-            const status = getSessionStatus(sessionNum);
-            const attemptData = sessionAttempts[sessionNum];
-            const sessionQuestionCount = questionsData.questions.filter(q => q.session === sessionNum).length;
-            
-            return (
-              <div 
-                key={sessionNum}
-                className={`session-card ${status}`}
-                onClick={() => status !== 'locked' && startSession(sessionNum)}
-              >
-                <div className="session-number">Session {sessionNum}</div>
-                <div className="session-title">{sessionQuestionCount} Questions</div>
-                {attemptData && (
-                  <div className="session-detail">
-                    Best: {attemptData.percentage.toFixed(1)}% - {attemptData.attempts} attempt(s)
-                  </div>
-                )}
-                <span className={`session-status ${status}`}>
-                  {status === 'available' && 'Ready'}
-                  {status === 'locked' && 'Locked'}
-                  {status === 'in-progress' && 'In Progress'}
-                  {status === 'completed' && 'Passed ✓'}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+         <div className="sessions-grid">
+           {[1, 2, 3, 4].map(sessionNum => {
+             const status = getSessionStatus(sessionNum);
+             const attemptData = sessionAttempts[sessionNum];
+             const sessionQuestionCount = questionsData.questions.filter(q => q.session === sessionNum).length;
+             
+             return (
+               <div 
+                 key={sessionNum}
+                 className={`session-card ${status}`}
+                 onClick={() => startSession(sessionNum)}
+               >
+                 <div className="session-number">Session {sessionNum}</div>
+                 <div className="session-title">{sessionQuestionCount} Questions</div>
+                 {attemptData && (
+                   <div className="session-detail">
+                     Best: {attemptData.percentage.toFixed(1)}% - {attemptData.attempts} attempt(s)
+                   </div>
+                 )}
+                 <span className={`session-status ${status}`}>
+                   {status === 'available' && 'Ready'}
+                   {status === 'locked' && 'Locked'}
+                   {status === 'in-progress' && 'In Progress'}
+                   {status === 'completed' && 'Passed ✓'}
+                 </span>
+               </div>
+             );
+           })}
+         </div>
       </div>
     );
   };
